@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -11,12 +12,17 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerToggleSprintEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffectType;
+
+import com.vexsoftware.votifier.model.VotifierEvent;
 
 public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 	private String host = "localhost";
@@ -25,8 +31,12 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 	private String password = "password";
 	private String database = "Voting";
 	private double checkTime = 5.0D;
+	private double distSpam = 20D;
 	static String warning;
 	static String pastDue;
+	private String walkMessage;
+	private String lastServiceName;
+	private String voteMessage;
 	boolean slow = false;
 	static MySQLDatabase mySQLDatabase;
 	protected static Plugin instance;
@@ -34,6 +44,7 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 	public static double Hour = 24.5D;
 	static public Location spawn;
 	YamlConfiguration config;
+	public static Map walkDist = new Map();
 
 	public void onEnable() {
 		instance = this;
@@ -60,6 +71,8 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 				config.set("database", "Voting");
 				config.set("debug", false);
 				config.set("spawn", null);
+				config.set("distSpam", 20D);
+				config.set("walkMes", "Because");
 				config.save(f);
 			}
 			config.load(f);
@@ -72,6 +85,17 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 			database = config.getString("database", "Voting");
 			// debug = config.getBoolean("debug", false);
 			spawn = str2Loc(config.getString("spawn", null));
+			slow = config.getBoolean("creeper", false);
+			distSpam = config.getDouble("distSpam", 20D);
+			walkMessage = ChatColor.translateAlternateColorCodes('&',
+					config.getString("walkMes", "Because I told you to"));
+			lastServiceName = config.getString("lastservicename",
+					"MinecraftServers.org");
+			voteMessage = ChatColor
+					.translateAlternateColorCodes(
+							'&',
+							config.getString("votemessage",
+									"%NAME% has voted! Thanks for supporting RealmCraft!"));
 			mySQLDatabase = new MySQLDatabase(this.host, this.port,
 					this.username, this.password, this.database);
 			mySQLDatabase.open();
@@ -83,9 +107,8 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 							.getScheduler()
 							.runTaskAsynchronously(
 									SlowVote.instance,
-									new checkRunnable(players,
-											SlowVote.Hour, slow,
-											checkTime * 20 * 60));
+									new checkRunnable(players, SlowVote.Hour,
+											slow, checkTime * 20 * 60));
 				}
 			}, 1L, (long) (this.checkTime * 20.0D * 60.0D));
 		} catch (Exception e) {
@@ -138,9 +161,10 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-		}
-		else if (cmdlbl.equalsIgnoreCase("svsetspawn") && sender.hasPermission("sv.admin")){
-			if (!(sender instanceof Player)) return true;
+		} else if (cmdlbl.equalsIgnoreCase("svsetspawn")
+				&& sender.hasPermission("sv.admin")) {
+			if (!(sender instanceof Player))
+				return true;
 			spawn = ((Player) sender).getLocation();
 			config.set("spawn", loc2str(spawn));
 			try {
@@ -173,5 +197,33 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 		output = output.concat(" " + loc.getX() + " " + loc.getY() + " "
 				+ loc.getZ() + " " + loc.getYaw() + " " + loc.getPitch());
 		return output;
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void onLeave(PlayerQuitEvent e) {
+		walkDist.remove(e.getPlayer());
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void onWalk(PlayerMoveEvent e) {
+		// Needed for dist calc
+		if (e.getTo().getWorld().equals(e.getFrom().getWorld())) {
+			double i = walkDist.get(e.getPlayer());
+			if (i >= 0) {
+				i += e.getFrom().distanceSquared(e.getTo());
+				if (i > distSpam) {
+					e.getPlayer().sendMessage(walkMessage);
+					i = 0;
+				}
+			}
+		}
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void onVote(VotifierEvent e) {
+		if (e.getVote().getServiceName().equals(lastServiceName)) {
+			Bukkit.broadcastMessage(voteMessage.replace("%NAME%", e.getVote()
+					.getUsername()));
+		}
 	}
 }

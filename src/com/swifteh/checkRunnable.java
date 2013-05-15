@@ -32,15 +32,19 @@ public class checkRunnable implements Runnable {
 							.getTimestamp(1).getTime()) / 60000.0D;
 
 					if (difference / 60.0D > this.Hour) {
-						SlowVote.mySQLDatabase.update("UPDATE votes SET Consecutive = NOW() WHERE user = '"
-								+ p.getName() + "';");
+						SlowVote.mySQLDatabase
+								.update("UPDATE votes SET Consecutive = NOW() WHERE user = '"
+										+ p.getName() + "';");
 						final Player hold = p;
 						Bukkit.getScheduler().runTask(SlowVote.instance,
 								new Runnable() {
 									public void run() {
+										double dist = SlowVote.walkDist.get(hold);
+										if (dist < 0) SlowVote.walkDist.add(hold, 0);
 										hold.sendMessage(ChatColor.RED
 												+ SlowVote.pastDue);
-										if (slow && !hold.hasPermission("sv.bypass")) {
+										if (slow
+												&& !hold.hasPermission("sv.bypass")) {
 											hold.addPotionEffect(new PotionEffect(
 													PotionEffectType.SLOW,
 													(int) time, 3));
@@ -62,6 +66,7 @@ public class checkRunnable implements Runnable {
 
 								});
 					}
+					else if (SlowVote.walkDist.get(p) > 0) SlowVote.walkDist.remove(p);
 
 				}
 
