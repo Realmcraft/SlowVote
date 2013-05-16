@@ -227,6 +227,7 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 	public void onWalk(PlayerMoveEvent e) {
 		// Needed for dist calc
 		if (e.getTo().getWorld().equals(e.getFrom().getWorld())) {
+			if (e.getPlayer().hasPermission("sv.bypass")) return;
 			double i = walkDist.get(e.getPlayer().getName());
 			if (i >= 0) {
 				i += e.getFrom().distanceSquared(e.getTo());
