@@ -9,24 +9,28 @@ public class Map {
 
 	ArrayList<Pair> list = new ArrayList<Pair>();
 
-	void add(Player p, double i) {
+	void add(String p, double i) {
 		list.add(new Pair(p, i));
 	}
 
 	void remove(Player p) {
 		Iterator<Pair> i = list.iterator();
 		while (i.hasNext())
-			if (i.next().p.getName().equals(p.getName())) {
+			if (i.next().p.equals(p.getName())) {
 				i.remove();
 				return;
 			}
 	}
 	
-	double get(Player p){
+	double get(String string){
 		for(Pair pair : list){
-			if (pair.p.getName().equals(p.getName()))
+			if (pair.p.equals(string))
 					return pair.i;
 		}
 		return -1;
+	}
+	
+	void replace(Player p, double i){
+		for(Pair pair : list) if (pair.p.equals(p.getName())) pair.i = i;
 	}
 }

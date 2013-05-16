@@ -2,6 +2,8 @@ package com.swifteh;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -9,6 +11,7 @@ import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -83,6 +86,7 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 			username = config.getString("username", "root");
 			password = config.getString("password", "");
 			database = config.getString("database", "Voting");
+			checkTime = config.getDouble("checktime", 1D);
 			// debug = config.getBoolean("debug", false);
 			spawn = str2Loc(config.getString("spawn", null));
 			slow = config.getBoolean("creeper", false);
@@ -96,6 +100,7 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 							'&',
 							config.getString("votemessage",
 									"%NAME% has voted! Thanks for supporting RealmCraft!"));
+			dealWithCommands(config.getConfigurationSection("timeCommands"));
 			mySQLDatabase = new MySQLDatabase(this.host, this.port,
 					this.username, this.password, this.database);
 			mySQLDatabase.open();
@@ -116,6 +121,18 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 		}
 	}
 
+	private void dealWithCommands(ConfigurationSection cs) {
+		ArrayList<SVCommand> cmds = new ArrayList<SVCommand>();
+		Iterator<String> keys = cs.getKeys(false).iterator();
+		while (keys.hasNext()) {
+			String commandName = keys.next();
+			cmds.add(new SVCommand(commandName, 
+					cs.getInt(commandName + ".time"), 
+					cs.getConfigurationSection(commandName + ".commands")));
+		}
+		Bukkit.getScheduler().runTaskTimer(this, new CommandRunnable(this, cmds), 0L, 1200L);
+	}
+
 	public void onDisable() {
 		try {
 			mySQLDatabase.close();
@@ -125,6 +142,7 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 
 	@EventHandler
 	public void OnJoin(PlayerJoinEvent e) {
+		CommandRunnable.online.put(e.getPlayer().getName(), 0L);
 		if (mySQLDatabase == null)
 			return;
 		getServer().getScheduler().runTaskAsynchronously(this,
@@ -202,20 +220,24 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onLeave(PlayerQuitEvent e) {
 		walkDist.remove(e.getPlayer());
+		CommandRunnable.online.remove(e.getPlayer().getName());
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onWalk(PlayerMoveEvent e) {
 		// Needed for dist calc
 		if (e.getTo().getWorld().equals(e.getFrom().getWorld())) {
-			double i = walkDist.get(e.getPlayer());
+			double i = walkDist.get(e.getPlayer().getName());
 			if (i >= 0) {
 				i += e.getFrom().distanceSquared(e.getTo());
 				if (i > distSpam) {
 					e.getPlayer().sendMessage(walkMessage);
 					i = 0;
 				}
+				walkDist.replace(e.getPlayer(), i);
 			}
+			else
+				walkDist.remove(e.getPlayer());
 		}
 	}
 
