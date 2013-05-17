@@ -45,10 +45,10 @@ public class checkRunnable implements Runnable {
 												+ SlowVote.pastDue);
 										if (slow
 												&& !hold.hasPermission("sv.bypass")) {
-											hold.removePotionEffect(PotionEffectType.SLOW);
+//											hold.removePotionEffect(PotionEffectType.SLOW);
 											hold.addPotionEffect(new PotionEffect(
 													PotionEffectType.SLOW,
-													(int) time, 3));
+													(int) time - 2, 3));
 										}
 									}
 
