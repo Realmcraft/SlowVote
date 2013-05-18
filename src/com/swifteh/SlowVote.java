@@ -170,13 +170,15 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 				p.setWalkSpeed(0.2F);
 			try {
 				int r = mySQLDatabase
-						.update("UPDATE SET timestamp = NOW() WHERE User = '"
+						.update("UPDATE votes SET TimeStamp = NOW() WHERE User = '"
 								+ args[0] + "';");
 				if (r != 1) {
 					sender.sendMessage("Could not update timestamp");
 				} else
 					sender.sendMessage("Timestamp updated");
 			} catch (Exception e) {
+				p.sendMessage("Stack Error");
+				p.sendMessage(e.getMessage());
 				e.printStackTrace();
 			}
 		} else if (cmdlbl.equalsIgnoreCase("svsetspawn")
@@ -245,6 +247,13 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onVote(VotifierEvent e) {
 		if (e.getVote().getServiceName().equals(lastServiceName)) {
+			try {
+				mySQLDatabase
+						.update("UPDATE votes SET TimeStamp = NOW() WHERE User = '"
+								+ e.getVote().getUsername() + "';");
+			} catch (Exception e1) {
+				e1.printStackTrace();
+			}
 			Bukkit.broadcastMessage(voteMessage.replace("%NAME%", e.getVote()
 					.getUsername()));
 		}

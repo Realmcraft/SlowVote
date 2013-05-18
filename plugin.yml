@@ -2,8 +2,7 @@ name: SlowVote
 
 main: com.swifteh.SlowVote
 
-version: 0.6
-
+version: 1.0
 authors: [swifteh, SergeantMajorME]
 
 description: voting thing
