@@ -14,6 +14,8 @@ commands:
         description: resets a players creeperspeed
 
     svsetspawn:
+    mend:
+        description: repairs the item in your hand
 permissions:
     sv.mod:
         default: op

@@ -41,9 +41,9 @@ public class joinRunnable implements Runnable {
 				return;
 			} else {
 				if (SlowVote.mySQLDatabase
-						.create("INSERT INTO Votes(User, timestamp "/*, consecutive) */+"VALUES('"
+						.create("INSERT INTO votes(User, timestamp, mend) "/*, consecutive) */+"VALUES('"
 								+ this.name.toLowerCase()
-								+ "', DATE_ADD(NOW(), INTERVAL 2 DAY), NOW());"))
+								+ "', DATE_ADD(NOW(), INTERVAL 2 DAY)," /*NOW(),*/ + " 0);"))
 					Bukkit.getLogger().info(
 							"Created table data for " + this.name);
 				else

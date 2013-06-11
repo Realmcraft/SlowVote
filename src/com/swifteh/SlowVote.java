@@ -2,12 +2,14 @@ package com.swifteh;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -21,6 +23,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerToggleSprintEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffectType;
@@ -48,6 +51,7 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 	static public Location spawn;
 	YamlConfiguration config;
 	public static Map walkDist = new Map();
+	Material[] tools;
 
 	public void onEnable() {
 		instance = this;
@@ -119,18 +123,71 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		tools = new Material[]{
+				Material.DIAMOND_PICKAXE,
+				Material.DIAMOND_SWORD,
+				Material.DIAMOND_SPADE,
+				Material.DIAMOND_AXE,
+				Material.DIAMOND_HOE,
+				Material.DIAMOND_HELMET,
+				Material.DIAMOND_CHESTPLATE,
+				Material.DIAMOND_LEGGINGS,
+				Material.DIAMOND_BOOTS,
+				Material.IRON_PICKAXE,
+				Material.IRON_SWORD,
+				Material.IRON_SPADE,
+				Material.IRON_AXE,
+				Material.IRON_HOE,
+				Material.IRON_HELMET,
+				Material.IRON_CHESTPLATE,
+				Material.IRON_LEGGINGS,
+				Material.IRON_BOOTS,
+				Material.GOLD_PICKAXE,
+				Material.GOLD_SWORD,
+				Material.GOLD_SPADE,
+				Material.GOLD_AXE,
+				Material.GOLD_HOE,
+				Material.GOLD_HELMET,
+				Material.GOLD_CHESTPLATE,
+				Material.GOLD_LEGGINGS,
+				Material.GOLD_BOOTS,
+				Material.STONE_PICKAXE,
+				Material.STONE_SWORD,
+				Material.STONE_SPADE,
+				Material.STONE_AXE,
+				Material.STONE_HOE,
+				Material.CHAINMAIL_HELMET,
+				Material.CHAINMAIL_CHESTPLATE,
+				Material.CHAINMAIL_LEGGINGS,
+				Material.CHAINMAIL_BOOTS,
+				Material.WOOD_PICKAXE,
+				Material.WOOD_SWORD,
+				Material.WOOD_SPADE,
+				Material.WOOD_AXE,
+				Material.WOOD_HOE,
+				Material.LEATHER_HELMET,
+				Material.LEATHER_CHESTPLATE,
+				Material.LEATHER_LEGGINGS,
+				Material.LEATHER_BOOTS,
+				Material.FLINT_AND_STEEL,
+				Material.SHEARS,
+				Material.BOW,
+				Material.FISHING_ROD,
+				Material.ANVIL};
 	}
 
 	private void dealWithCommands(ConfigurationSection cs) {
 		ArrayList<SVCommand> cmds = new ArrayList<SVCommand>();
+		if (cs == null || cs.getKeys(false) == null || cs.getKeys(false).size() < 1) return;
 		Iterator<String> keys = cs.getKeys(false).iterator();
 		while (keys.hasNext()) {
 			String commandName = keys.next();
-			cmds.add(new SVCommand(commandName, 
-					cs.getInt(commandName + ".time"), 
-					cs.getConfigurationSection(commandName + ".commands")));
+			cmds.add(new SVCommand(commandName, cs
+					.getInt(commandName + ".time"), cs
+					.getConfigurationSection(commandName + ".commands")));
 		}
-		Bukkit.getScheduler().runTaskTimer(this, new CommandRunnable(this, cmds), 0L, 1200L);
+		Bukkit.getScheduler().runTaskTimer(this,
+				new CommandRunnable(this, cmds), 0L, 1200L);
 	}
 
 	public void onDisable() {
@@ -181,7 +238,19 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 				p.sendMessage(e.getMessage());
 				e.printStackTrace();
 			}
-		} else if (cmdlbl.equalsIgnoreCase("svsetspawn")
+		} else if (cmdlbl.equalsIgnoreCase("mend")){
+			if (!(sender instanceof Player)){
+				sender.sendMessage("Not allowed to repair as a console player");
+				return false;
+			}
+			final Player p = (Player) sender;
+			Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable(){
+				@Override
+				public void run() {
+					validateRepair(p);
+				}
+			});
+		}else if (cmdlbl.equalsIgnoreCase("svsetspawn")
 				&& sender.hasPermission("sv.admin")) {
 			if (!(sender instanceof Player))
 				return true;
@@ -194,6 +263,62 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 			}
 		}
 		return true;
+	}
+	
+	protected int getRepair(Player p) throws Exception{
+		ResultSet r = mySQLDatabase.query(
+				"SELECT mend FROM votes WHERE User = '" + p.getName().toLowerCase() + "';");
+		if (r.next()){
+			return r.getInt(1);
+		}
+		else return -1;
+	}
+	
+	protected void incrementRepair(Player p, int amt){
+		try {
+			int num = getRepair(p);
+			mySQLDatabase.update("Update votes SET mend = " + (num + amt) + " WHERE User = '"
+					+ p.getName().toLowerCase() + "';");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	protected void validateRepair(final Player p) {
+		try {
+			int num = getRepair(p);
+			if (num <= 0){
+				p.sendMessage(ChatColor.RED + "You must vote again to gain more repair");
+				return;
+			}
+			Bukkit.getScheduler().runTask(SlowVote.instance, new Runnable(){
+				@Override
+				public void run() {
+					repairHand(p);
+				}
+			});
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	protected void repairHand(final Player p) {
+		ItemStack i = p.getItemInHand();
+		for (Material m : tools){
+			if (!m.equals(i.getType())) continue;
+			i.setDurability((short) 0);
+			p.sendMessage(ChatColor.GREEN + "Item successfully repaired");
+			Bukkit.getScheduler().runTaskAsynchronously(instance, new Runnable(){
+				@Override
+				public void run() {
+					incrementRepair(p,-1);
+					return;
+				}
+			});
+			return;
+		}
+		p.sendMessage(ChatColor.RED + "Item not repaired");
+		return;
 	}
 
 	public Location str2Loc(String s) {
@@ -229,7 +354,8 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 	public void onWalk(PlayerMoveEvent e) {
 		// Needed for dist calc
 		if (e.getTo().getWorld().equals(e.getFrom().getWorld())) {
-			if (e.getPlayer().hasPermission("sv.bypass")) return;
+			if (e.getPlayer().hasPermission("sv.bypass"))
+				return;
 			double i = walkDist.get(e.getPlayer().getName());
 			if (i >= 0) {
 				i += e.getFrom().distanceSquared(e.getTo());
@@ -238,8 +364,7 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 					i = 0;
 				}
 				walkDist.replace(e.getPlayer(), i);
-			}
-			else
+			} else
 				walkDist.remove(e.getPlayer());
 		}
 	}
@@ -247,13 +372,20 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onVote(VotifierEvent e) {
 		if (e.getVote().getServiceName().equals(lastServiceName)) {
-			try {
-				mySQLDatabase
-						.update("UPDATE votes SET TimeStamp = NOW() WHERE User = '"
-								+ e.getVote().getUsername() + "';");
-			} catch (Exception e1) {
-				e1.printStackTrace();
-			}
+			final String user = e.getVote().getUsername();
+			Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable(){
+				@Override
+				public void run() {
+					try {
+						boolean i = mySQLDatabase.create("INSERT INTO votes (User, mend) VALUES ('" + 
+								user + 
+								"', 1) ON DUPLICATE KEY UPDATE timestamp = now(), mend = mend + 1;");
+						if (!i) Bukkit.getLogger().info("Could not update " + user);
+					} catch (Exception e1) {
+						e1.printStackTrace();
+					}
+				}
+			});
 			Bukkit.broadcastMessage(voteMessage.replace("%NAME%", e.getVote()
 					.getUsername()));
 		}
