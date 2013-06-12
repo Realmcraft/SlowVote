@@ -14,7 +14,7 @@ public class joinRunnable implements Runnable {
 	public void run() {
 		try {
 			ResultSet result = SlowVote.mySQLDatabase
-					.query("SELECT timestamp FROM votes WHERE LOWER(User) = '"
+					.query("SELECT `timestamp` FROM votes WHERE LOWER(User) = '"
 							+ name.toLowerCase() + "';");
 			// Player found in database
 			if (result.next()) {
@@ -41,9 +41,9 @@ public class joinRunnable implements Runnable {
 				return;
 			} else {
 				if (SlowVote.mySQLDatabase
-						.create("INSERT INTO votes(User, timestamp, mend) "/*, consecutive) */+"VALUES('"
+						.create("INSERT INTO votes(`User`, `timestamp`, `mend`) "/*, consecutive) */+"VALUES('"
 								+ this.name.toLowerCase()
-								+ "', DATE_ADD(NOW(), INTERVAL 2 DAY)," /*NOW(),*/ + " 0);"))
+								+ "', DATE_ADD(NOW(), INTERVAL 2 DAY), 1);"))
 					Bukkit.getLogger().info(
 							"Created table data for " + this.name);
 				else

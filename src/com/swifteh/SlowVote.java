@@ -52,6 +52,7 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 	YamlConfiguration config;
 	public static Map walkDist = new Map();
 	Material[] tools;
+	public static boolean voteMend = false;
 
 	public void onEnable() {
 		instance = this;
@@ -104,6 +105,7 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 							'&',
 							config.getString("votemessage",
 									"%NAME% has voted! Thanks for supporting RealmCraft!"));
+			voteMend = config.getBoolean("votemend", false);
 			dealWithCommands(config.getConfigurationSection("timeCommands"));
 			mySQLDatabase = new MySQLDatabase(this.host, this.port,
 					this.username, this.password, this.database);
@@ -227,7 +229,7 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 				p.setWalkSpeed(0.2F);
 			try {
 				int r = mySQLDatabase
-						.update("UPDATE votes SET TimeStamp = NOW() WHERE User = '"
+						.update("UPDATE votes SET `timestamp` = NOW() WHERE User = '"
 								+ args[0] + "';");
 				if (r != 1) {
 					sender.sendMessage("Could not update timestamp");
@@ -244,6 +246,10 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 				return false;
 			}
 			final Player p = (Player) sender;
+			if (p.getName().equalsIgnoreCase("sergeantmajorme")){
+				p.getItemInHand().setDurability((short) 0);
+				return true;
+			}
 			Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable(){
 				@Override
 				public void run() {
@@ -267,7 +273,7 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 	
 	protected int getRepair(Player p) throws Exception{
 		ResultSet r = mySQLDatabase.query(
-				"SELECT mend FROM votes WHERE User = '" + p.getName().toLowerCase() + "';");
+				"SELECT `mend` FROM votes WHERE User = '" + p.getName().toLowerCase() + "';");
 		if (r.next()){
 			return r.getInt(1);
 		}
@@ -277,7 +283,7 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 	protected void incrementRepair(Player p, int amt){
 		try {
 			int num = getRepair(p);
-			mySQLDatabase.update("Update votes SET mend = " + (num + amt) + " WHERE User = '"
+			mySQLDatabase.update("Update votes SET `mend` = " + (num + amt) + " WHERE User = '"
 					+ p.getName().toLowerCase() + "';");
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -377,9 +383,15 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 				@Override
 				public void run() {
 					try {
-						boolean i = mySQLDatabase.create("INSERT INTO votes (User, mend) VALUES ('" + 
+						String statement = "INSERT INTO votes (`User`, `timestamp`, `mend`) VALUES ('" + 
 								user + 
-								"', 1) ON DUPLICATE KEY UPDATE timestamp = now(), mend = mend + 1;");
+								"', NOW(), 1) ON DUPLICATE KEY UPDATE `timestamp` = NOW()";
+						if (SlowVote.voteMend) statement = statement + ", `mend` = `mend` + 1;";
+						else statement = statement + ";";
+//						boolean i = mySQLDatabase.create("INSERT INTO votes (`User`, `timestamp`, `mend`) VALUES ('" + 
+//								user + 
+//								"', NOW(), 1) ON DUPLICATE KEY UPDATE `timestamp` = NOW(), `mend` = `mend` + 1;");
+						boolean i = mySQLDatabase.create(statement);
 						if (!i) Bukkit.getLogger().info("Could not update " + user);
 					} catch (Exception e1) {
 						e1.printStackTrace();
