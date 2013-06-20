@@ -24,9 +24,8 @@ public class checkRunnable implements Runnable {
 		for (Player p : this.players)
 			try {
 				ResultSet result = SlowVote.mySQLDatabase
-						.query("SELECT timestamp FROM Votes WHERE LOWER(User) = '"
+						.query("SELECT `timestamp` FROM votes WHERE LOWER(User) = '"
 								+ p.getName().toLowerCase() + "';");
-
 				if (result.first()) {
 					final double difference = (System.currentTimeMillis() - result
 							.getTimestamp(1).getTime()) / 60000.0D;
@@ -72,7 +71,8 @@ public class checkRunnable implements Runnable {
 				}
 
 			} catch (Exception e) {
-				e.printStackTrace();
+				Bukkit.getLogger().severe("SV Error: Coult not check for " + p.getName());
+				Bukkit.getLogger().severe("Error " + e.getLocalizedMessage());
 			}
 	}
 }
