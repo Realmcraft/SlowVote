@@ -50,7 +50,6 @@ public class checkRunnable implements Runnable {
 													(int) time - 2, 3));
 										}
 									}
-
 								});
 					} else if (difference > this.Hour * 60.0D - 5.0D) {
 						final Player hold = p;

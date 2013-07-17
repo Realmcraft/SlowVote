@@ -229,7 +229,7 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 				p.setWalkSpeed(0.2F);
 			try {
 				int r = mySQLDatabase
-						.update("UPDATE votes SET `timestamp` = NOW() WHERE User = '"
+						.update("UPDATE votes SET `timestamp` = NOW(), `mend`=`mend`+1 WHERE User = '"
 								+ args[0] + "';");
 				if (r != 1) {
 					sender.sendMessage("Could not update timestamp");
@@ -373,6 +373,20 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 			} else
 				walkDist.remove(e.getPlayer());
 		}
+		Player p = e.getPlayer();
+		Player[] players = Bukkit.getOnlinePlayers();
+		if (p.getLocation().getWorld().equals(spawn.getWorld()) && p.getLocation().distanceSquared(spawn) < 9){
+			//If player is within 3 blocks of spawn spot.
+			for(Player pl : players){
+				pl.hidePlayer(p);
+			}
+		}
+		else if (p.getLocation().getWorld().equals(spawn.getWorld()) && e.getFrom().distanceSquared(spawn) < 9 && e.getTo().distanceSquared(spawn) >= 9){
+			//If player is still in that world, but more than 3 blocks away, show the player (this may... screw a lot of things up)
+			for(Player pl : players){
+				pl.showPlayer(p);
+			}
+		}
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
@@ -392,7 +406,7 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 //								user + 
 //								"', NOW(), 1) ON DUPLICATE KEY UPDATE `timestamp` = NOW(), `mend` = `mend` + 1;");
 						boolean i = mySQLDatabase.create(statement);
-						if (!i) Bukkit.getLogger().info("Could not update " + user);
+						if (!i) Bukkit.getLogger().info("[SV] Could not update " + user);
 					} catch (Exception e1) {
 						e1.printStackTrace();
 					}
