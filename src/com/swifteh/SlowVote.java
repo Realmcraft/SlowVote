@@ -125,6 +125,7 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		getServer().getScheduler().runTaskTimer(this, new InvisRunnable(), 60, 60);
 		tools = new Material[]{
 				Material.DIAMOND_PICKAXE,
 				Material.DIAMOND_SWORD,
@@ -372,20 +373,6 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 				walkDist.replace(e.getPlayer(), i);
 			} else
 				walkDist.remove(e.getPlayer());
-		}
-		Player p = e.getPlayer();
-		Player[] players = Bukkit.getOnlinePlayers();
-		if (p.getLocation().getWorld().equals(spawn.getWorld()) && p.getLocation().distanceSquared(spawn) < 9){
-			//If player is within 3 blocks of spawn spot.
-			for(Player pl : players){
-				pl.hidePlayer(p);
-			}
-		}
-		else if (p.getLocation().getWorld().equals(spawn.getWorld()) && e.getFrom().distanceSquared(spawn) < 9 && e.getTo().distanceSquared(spawn) >= 9){
-			//If player is still in that world, but more than 3 blocks away, show the player (this may... screw a lot of things up)
-			for(Player pl : players){
-				pl.showPlayer(p);
-			}
 		}
 	}
 
