@@ -31,8 +31,12 @@ public class joinRunnable implements Runnable {
 								@Override
 								public void run() {
 									Player p = Bukkit.getPlayerExact(name);
-									if (p != null)
+									if (p != null){
 										p.teleport(SlowVote.spawn);
+										if (SlowVote.DemotePerm != null && SlowVote.DemoteCommand != null && p.hasPermission(SlowVote.DemotePerm)){
+												Bukkit.dispatchCommand(Bukkit.getConsoleSender(), SlowVote.DemoteCommand);
+										}
+									}
 									return;
 								}
 

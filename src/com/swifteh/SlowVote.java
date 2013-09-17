@@ -53,6 +53,11 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 	public static Map walkDist = new Map();
 	Material[] tools;
 	public static boolean voteMend = false;
+	public static String DemotePerm;
+	public static String PromotePerm;
+	public static String DemoteCommand;
+	public static String PromoteCommand;
+	
 
 	public void onEnable() {
 		instance = this;
@@ -84,14 +89,18 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 				config.save(f);
 			}
 			config.load(f);
-			warning = config.getString("warning", "ERR");
-			pastDue = config.getString("past", "ERR");
+			warning = ChatColor.translateAlternateColorCodes('&', config.getString("warning", "ERR"));
+			pastDue = ChatColor.translateAlternateColorCodes('&', config.getString("past", "ERR"));
 			host = config.getString("host", "localhost");
 			port = config.getString("port", "3306");
 			username = config.getString("username", "root");
 			password = config.getString("password", "");
 			database = config.getString("database", "Voting");
 			checkTime = config.getDouble("checktime", 1D);
+			DemotePerm = config.getString("demoteperm", null);
+			DemoteCommand = config.getString("demotecommand",null);
+			PromotePerm = config.getString("promoteperm", null);
+			PromoteCommand = config.getString("promotecommand", null);
 			// debug = config.getBoolean("debug", false);
 			spawn = str2Loc(config.getString("spawn", null));
 			slow = config.getBoolean("creeper", false);
@@ -401,6 +410,11 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 			});
 			Bukkit.broadcastMessage(voteMessage.replace("%NAME%", e.getVote()
 					.getUsername()));
+			if (SlowVote.PromoteCommand == null || SlowVote.PromotePerm == null) return;
+			Player p = Bukkit.getPlayer(e.getVote().getUsername());
+			if (SlowVote.voteMend && p != null && p.hasPermission(SlowVote.PromotePerm)){
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), SlowVote.PromoteCommand);
+			}
 		}
 	}
 }
