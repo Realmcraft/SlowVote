@@ -2,28 +2,22 @@ name: SlowVote
 
 main: com.swifteh.SlowVote
 
-version: 1.2.1
+version: 1.4
 authors: [swifteh, SergeantMajorME]
-
 description: voting thing
-
-depends: [Votifier]
+depend: [Votifier]
 commands:
-
     svreset:
         description: resets a players creeperspeed
-
     svsetspawn:
     mend:
         description: repairs the item in your hand
 permissions:
     sv.mod:
         default: op
-
     sv.bypass:
-
         default: op
-
     sv.admin:
-
         default: op
+    sv.demote:
+        default: false

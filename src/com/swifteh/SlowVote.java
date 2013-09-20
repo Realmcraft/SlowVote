@@ -393,14 +393,17 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 				@Override
 				public void run() {
 					try {
-						String statement = "INSERT INTO votes (`User`, `timestamp`, `mend`) VALUES ('" + 
-								user + 
-								"', NOW(), 1) ON DUPLICATE KEY UPDATE `timestamp` = NOW()";
-						if (SlowVote.voteMend) statement = statement + ", `mend` = `mend` + 1;";
-						else statement = statement + ";";
-//						boolean i = mySQLDatabase.create("INSERT INTO votes (`User`, `timestamp`, `mend`) VALUES ('" + 
-//								user + 
-//								"', NOW(), 1) ON DUPLICATE KEY UPDATE `timestamp` = NOW(), `mend` = `mend` + 1;");
+						String statement = "INSERT INTO votes (`User`, `timestamp`, `mend`, `total`) VALUES ('"
+								+ user
+								+ "', NOW(), 1, 1) ON DUPLICATE KEY UPDATE `timestamp` = NOW()";
+						if (SlowVote.voteMend)
+							statement = statement + ", `mend` = `mend` + 1";
+						statement = statement + ", `total` = `total` + 1;";
+						// boolean i =
+						// mySQLDatabase.create("INSERT INTO votes (`User`, `timestamp`, `mend`) VALUES ('"
+						// +
+						// user +
+						// "', NOW(), 1) ON DUPLICATE KEY UPDATE `timestamp` = NOW(), `mend` = `mend` + 1;");
 						boolean i = mySQLDatabase.create(statement);
 						if (!i) Bukkit.getLogger().info("[SV] Could not update " + user);
 					} catch (Exception e1) {
@@ -413,7 +416,7 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 			if (SlowVote.PromoteCommand == null || SlowVote.PromotePerm == null) return;
 			Player p = Bukkit.getPlayer(e.getVote().getUsername());
 			if (SlowVote.voteMend && p != null && p.hasPermission(SlowVote.PromotePerm)){
-				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), SlowVote.PromoteCommand);
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), SlowVote.PromoteCommand.replace("%NAME%", e.getVote().getUsername()));
 			}
 		}
 	}
