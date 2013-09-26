@@ -17,37 +17,44 @@ public class joinRunnable implements Runnable {
 					.query("SELECT `timestamp` FROM votes WHERE LOWER(User) = '"
 							+ name.toLowerCase() + "';");
 			// Player found in database
+			//System.out.println("1");
 			if (result.next()) {
 				final double difference = (System.currentTimeMillis() - result
 						.getTimestamp(1).getTime()) / 60000.0D;
+				//System.out.println("2");
 				if (difference / 60.0D > SlowVote.Hour) {
-					if (SlowVote.spawn == null) {
-						System.out
-								.println("Error retrieving slowvote spawn, report to Sgt");
-					}
 					Bukkit.getScheduler().runTaskLater(SlowVote.instance,
 							new Runnable() {
 
 								@Override
 								public void run() {
+									//System.out.println("3");
 									Player p = Bukkit.getPlayerExact(name);
+									//System.out.println("4");
 									if (p != null){
-										p.teleport(SlowVote.spawn);
-										if (SlowVote.DemotePerm != null && SlowVote.DemoteCommand != null && p.hasPermission(SlowVote.DemotePerm)){
-												Bukkit.dispatchCommand(Bukkit.getConsoleSender(), SlowVote.DemoteCommand);
+										//System.out.println("5");
+										if (SlowVote.spawn != null) p.teleport(SlowVote.spawn);
+										else Bukkit.getLogger().info("Error retrieving slowvote spawn, report to Sgt");
+										//System.out.println("6");
+										if (SlowVote.DemotePerm != null && SlowVote.DemoteCommand != null && !p.hasPermission(SlowVote.DemotePerm)){
+											//System.out.println("7");
+											Bukkit.dispatchCommand(Bukkit.getConsoleSender(), SlowVote.DemoteCommand.replace("%NAME%", p.getName()));
 										}
+										//System.out.println("8");
 									}
+									//System.out.println("9");
 									return;
 								}
 
 							}, 20L);
 				}
+				//System.out.println("10");
 				return;
 			} else {
 				if (SlowVote.mySQLDatabase
-						.create("INSERT INTO votes(`User`, `timestamp`, `mend`) "/*, consecutive) */+"VALUES('"
+						.create("INSERT INTO votes(`User`, `timestamp`, `mend`, `total`) "/*, consecutive) */+"VALUES('"
 								+ this.name.toLowerCase()
-								+ "', DATE_ADD(NOW(), INTERVAL 2 DAY), 1);"))
+								+ "', DATE_ADD(NOW(), INTERVAL 2 DAY), 1, 1);"))
 					Bukkit.getLogger().info(
 							"Created table data for " + this.name);
 				else

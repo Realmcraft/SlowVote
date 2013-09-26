@@ -28,8 +28,6 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffectType;
 
-import com.vexsoftware.votifier.model.VotifierEvent;
-
 public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 	private String host = "localhost";
 	private String port = "3306";
@@ -41,8 +39,8 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 	static String warning;
 	static String pastDue;
 	private String walkMessage;
-	private String lastServiceName;
-	private String voteMessage;
+	String lastServiceName;
+	String voteMessage;
 	boolean slow = false;
 	static MySQLDatabase mySQLDatabase;
 	protected static Plugin instance;
@@ -119,6 +117,7 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 			mySQLDatabase = new MySQLDatabase(this.host, this.port,
 					this.username, this.password, this.database);
 			mySQLDatabase.open();
+			getServer().getPluginManager().registerEvents(new VoteListener(this), this);
 			getServer().getScheduler().runTaskTimer(this, new Runnable() {
 				public void run() {
 					Player[] players = Bukkit.getOnlinePlayers();
@@ -211,11 +210,15 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 
 	@EventHandler
 	public void OnJoin(PlayerJoinEvent e) {
+		//System.out.println("11");
 		CommandRunnable.online.put(e.getPlayer().getName(), 0L);
+		//System.out.println("12");
 		if (mySQLDatabase == null)
 			return;
+		//System.out.println("13");
 		getServer().getScheduler().runTaskAsynchronously(this,
 				new joinRunnable(e.getPlayer().getName()));
+		//System.out.println("14");
 	}
 
 	@EventHandler
@@ -277,6 +280,8 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+		}else if (cmdlbl.equalsIgnoreCase("svtestcommand") && sender.hasPermission("sv.admin")){
+			VoteListener.testCommand(sender, args[0]);
 		}
 		return true;
 	}
@@ -382,42 +387,6 @@ public class SlowVote extends JavaPlugin implements Listener, CommandExecutor {
 				walkDist.replace(e.getPlayer(), i);
 			} else
 				walkDist.remove(e.getPlayer());
-		}
-	}
-
-	@EventHandler(priority = EventPriority.MONITOR)
-	public void onVote(VotifierEvent e) {
-		if (e.getVote().getServiceName().equals(lastServiceName)) {
-			final String user = e.getVote().getUsername();
-			Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable(){
-				@Override
-				public void run() {
-					try {
-						String statement = "INSERT INTO votes (`User`, `timestamp`, `mend`, `total`) VALUES ('"
-								+ user
-								+ "', NOW(), 1, 1) ON DUPLICATE KEY UPDATE `timestamp` = NOW()";
-						if (SlowVote.voteMend)
-							statement = statement + ", `mend` = `mend` + 1";
-						statement = statement + ", `total` = `total` + 1;";
-						// boolean i =
-						// mySQLDatabase.create("INSERT INTO votes (`User`, `timestamp`, `mend`) VALUES ('"
-						// +
-						// user +
-						// "', NOW(), 1) ON DUPLICATE KEY UPDATE `timestamp` = NOW(), `mend` = `mend` + 1;");
-						boolean i = mySQLDatabase.create(statement);
-						if (!i) Bukkit.getLogger().info("[SV] Could not update " + user);
-					} catch (Exception e1) {
-						e1.printStackTrace();
-					}
-				}
-			});
-			Bukkit.broadcastMessage(voteMessage.replace("%NAME%", e.getVote()
-					.getUsername()));
-			if (SlowVote.PromoteCommand == null || SlowVote.PromotePerm == null) return;
-			Player p = Bukkit.getPlayer(e.getVote().getUsername());
-			if (SlowVote.voteMend && p != null && p.hasPermission(SlowVote.PromotePerm)){
-				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), SlowVote.PromoteCommand.replace("%NAME%", e.getVote().getUsername()));
-			}
 		}
 	}
 }

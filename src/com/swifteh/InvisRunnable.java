@@ -8,6 +8,7 @@ public class InvisRunnable implements Runnable{
 
 	@Override
 	public void run() {
+		if (SlowVote.spawn == null) return;
 		for(Player p : SlowVote.spawn.getWorld().getPlayers()){
 			try{
 			if (p.getLocation().distance(SlowVote.spawn) < 3){
